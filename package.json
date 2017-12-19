@@ -24,5 +24,17 @@
   "scripts": {
     "webpack": "node ./node_modules/webpack/bin/webpack.js --verbose"
   },
-  "gypfile": true
+  "gypfile": true,
+  "jspm": {
+    "directories": {
+      "packages": "deps/jspm_packages"
+    },
+    "configFile": "jspm_config.js",
+    "dependencies": {
+      "seedrandom": "npm:seedrandom@^2.4.3"
+    },
+    "devDependencies": {
+      "typescript": "npm:typescript@^2.0.7"
+    }
+  }
 }
