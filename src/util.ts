@@ -33,10 +33,6 @@ export function assert(expr: boolean, msg = "") {
   }
 }
 
-export function assertFalse(expr: boolean, msg = "") {
-  assert(!expr, msg);
-}
-
 // Provides a map with default value 0.
 export class CounterMap {
   private map = new Map<number, number>();

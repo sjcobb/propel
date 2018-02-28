@@ -17,7 +17,7 @@ import { Tensor } from "./tensor";
 import { BasicTensor, DType, FlatVector, RegularArray, Shape, TensorLike,
     TypedArray } from "./types";
 import { assert } from "./util";
-export { assert, assertFalse } from "./util";
+export { assert } from "./util";
 
 function toShapeAndFlatVector(t: TensorLike): [Shape, FlatVector] {
   if ((t as Tensor).cpu) {
