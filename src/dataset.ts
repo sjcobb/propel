@@ -50,7 +50,7 @@ export function dataset(name: string): Dataset {
   return loader();
 }
 
-abstract class Dataset {
+export abstract class Dataset {
   constructor(protected parent?: Dataset) { }
 
   abstract async next(): Promise<NamedTensors>;

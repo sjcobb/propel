@@ -29,7 +29,7 @@ import { Params, params as createParams } from "./params";
 import { gc, NamedTensors, Tensor } from "./tensor";
 import { assert } from "./util";
 
-interface ExperimentOpts {
+export interface ExperimentOpts {
   printStepSecs: number;
 }
 
@@ -44,7 +44,7 @@ export async function experiment(name: string,
   return exp;
 }
 
-type PrintArgs = Array<number | string | Tensor>;
+export type PrintArgs = Array<number | string | Tensor>;
 let lastPrint: Promise<void> = Promise.resolve();
 
 /** A convenience function for printing tensors without calling dataSync on
@@ -77,10 +77,10 @@ export interface SGDOpts {
   momentum?: number; // TODO currently unused.
 }
 
-type LossFn = (params: Params) => Tensor;
+export type LossFn = (params: Params) => Tensor;
 
 // Optimizer is expected to modify the params in someway.
-type Optimizer = (opts, params: Params, grads: NamedTensors) => void;
+export type Optimizer = (opts, params: Params, grads: NamedTensors) => void;
 
 function sgd(opts, params: Params, grads: NamedTensors): void {
   for (const name of Object.keys(grads)) {
@@ -96,7 +96,7 @@ interface RateInfo {
   time: Date;
 }
 
-class Experiment {
+export class Experiment {
   private currentParams: Params;
   private step_?: number;
   readonly opts: ExperimentOpts;

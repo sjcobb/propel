@@ -5,4 +5,5 @@ import "./format_test";
 import "./mnist_test";
 import "./nn_example_test";
 import "./params_test";
+import "./tensor_util_test";
 import "./util_test";
