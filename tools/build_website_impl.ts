@@ -76,6 +76,7 @@ process.on("unhandledRejection", e => { throw e; });
 
   await writePages();
   await run.parcel("website/website_main.ts", "build/website");
+  await run.parcel("website/nb_sandbox.ts", "build/website");
   console.log("Website built in", websiteRoot);
 
   // Firebase keeps network connections open, so we have force exit the process.
