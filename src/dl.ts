@@ -17,7 +17,7 @@
 // These files call a top-level registerBackend, which must be run before doing
 // any work with DL.
 import "./dl/math/backends/backend_cpu";
-import "./dl/math/backends/backend_webgl";
+//import "./dl/math/backends/backend_webgl";
 
 import { ENV } from "./dl/environment";
 import { MathBackendWebGL }

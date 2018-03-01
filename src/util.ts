@@ -17,9 +17,9 @@ import { RegularArray } from "./types";
 
 const debug = false;
 const globalEval = eval;
-export const IS_WEB = typeof window !== "undefined";
+export const global = globalEval("this");
+export const IS_WEB = global.window !== undefined;
 export const IS_NODE = !IS_WEB;
-export const global = globalEval(IS_WEB ? "window" : "global");
 
 export function log(...args: any[]) {
   if (debug) {
@@ -89,7 +89,7 @@ const propelHosts = new Set(["127.0.0.1", "localhost", "propelml.org"]);
 // This is to confuse parcel.
 // TODO There may be a more elegant workaround in future versions.
 // https://github.com/parcel-bundler/parcel/pull/448
-const nodeRequire = IS_WEB ? null : require;
+export const nodeRequire = IS_WEB ? null : require;
 
 // Takes either a fully qualified url or a path to a file in the propel
 // website directory. Examples

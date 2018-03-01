@@ -23,7 +23,8 @@
 
 import { Component, h } from "preact";
 import { OutputHandlerDOM } from "../src/output_handler";
-import { assert, delay, IS_WEB } from "../src/util";
+import { assert, delay, global, IS_NODE, IS_WEB, nodeRequire }
+  from "../src/util";
 import { Avatar, GlobalHeader, Loading, UserMenu } from "./common";
 import * as db from "./db";
 import { RpcChannel } from "./nb_rpc_channel";
@@ -45,23 +46,50 @@ export function lookupCell(id: string | number) {
   return cellTable.get(numId);
 }
 
-function createSandbox(): RpcChannel {
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("sandbox", "allow-scripts");
-  iframe.setAttribute("srcdoc", `<!DOCTYPE html>
+const boilerplate = head => `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <script type="text/javascript"
-            src="${window.location.origin}/nb_sandbox.js"></script>
+    ${head}
   </head>
   <body>
   </body>
-</html>`);
+</html>`;
+
+function createIframe() {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("sandbox", "allow-scripts");
+  iframe.setAttribute("srcdoc", boilerplate(`
+    <script type="text/javascript"
+            src="${window.location.origin}/nb_sandbox.js"></script>
+  `));
   iframe.style.display = "none";
   document.body.appendChild(iframe);
+  return iframe.contentWindow;
+}
 
-  const sandbox = new RpcChannel(iframe.contentWindow, {
+function createJSDomContext() {
+  const JSDOM = nodeRequire("jsdom").JSDOM;
+  const { readFileSync } = nodeRequire("fs");
+  console.log("node frame:");
+  const sandboxScript =
+    readFileSync(`${__dirname}/../build/website/nb_sandbox.js`, "utf8");
+  const jsdom = new JSDOM("", { runScripts: "outside-only"});
+  const iw = jsdom.window;
+  console.log(window.postMessage, iw.postMessage);
+  iw.console = console;
+  iw._top = window;
+  console.log(window === iw);
+  iw.xxx = true;
+  iw.eval(sandboxScript);
+  console.log("end node frame");
+  return iw;
+}
+
+function createSandbox(): RpcChannel {
+  const iframe: Window = IS_WEB ? createIframe() : createJSDomContext();
+
+  const sandbox = new RpcChannel(iframe, {
     console(cellId: number, ...args: string[]): void {
       const cell = lookupCell(cellId);
       cell.console(...args);
@@ -83,7 +111,9 @@ function createSandbox(): RpcChannel {
 
 let sandbox_: RpcChannel = null;
 function sandbox(): RpcChannel {
-  if (sandbox_ === null) sandbox_ = createSandbox();
+  if (sandbox_ === null) {
+    sandbox_ = createSandbox();
+  }
   return sandbox_;
 }
 
