@@ -44,7 +44,9 @@ export class RpcChannel {
   }
 
   async call(handler: string, ...args: any[]): Promise<any> {
+    console.log("call", typeof xxx, handler);
     await this.ready;
+    console.log("ready", typeof xxx, handler);
 
     const id = `${this.unique}_${this.counter++}`;
     const message: CallMessage = {
@@ -66,7 +68,7 @@ export class RpcChannel {
   }
 
   private onMessage(event: MessageEvent): void {
-    console.log(event);
+    console.log(typeof xxx, event, event.data);
     const {type} = event.data;
     switch (type) {
       case "syn":
@@ -85,7 +87,7 @@ export class RpcChannel {
   private onHandshake(event: MessageEvent) {
     const {type} = event.data;
     if (type === "syn") {
-      event.source.postMessage({ type: "ack" }, "*");
+      this.remote.postMessage({ type: "ack" }, "*");
     }
     this.ready.resolve();
   }
@@ -98,14 +100,14 @@ export class RpcChannel {
     };
     try {
       const result = await this.handlers[handler](...args);
-      event.source.postMessage({ result, ...ret }, "*");
+      this.remote.postMessage({ result, ...ret }, "*");
     } catch (exception) {
       if (exception instanceof Error) {
         // Convert to a normal object.
         const { message, stack } = exception;
         exception = { message, stack, __error__: true };
       }
-      event.source.postMessage({ exception, ...ret }, "*");
+      this.remote.postMessage({ exception, ...ret }, "*");
     }
   }
 

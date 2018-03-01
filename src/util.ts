@@ -17,9 +17,9 @@ import { RegularArray } from "./types";
 
 const debug = false;
 const globalEval = eval;
-export const IS_WEB = typeof window !== "undefined";
+export const global = globalEval("this");
+export const IS_WEB = global.window !== undefined;
 export const IS_NODE = !IS_WEB;
-export const global = globalEval(IS_WEB ? "window" : "global");
 
 export function log(...args: any[]) {
   if (debug) {
@@ -84,12 +84,14 @@ export function objectsEqual(a, b) {
   return true;
 }
 
-const propelHosts = new Set(["127.0.0.1", "localhost", "propelml.org"]);
+const propelHosts = new Set(["", "127.0.0.1", "localhost", "propelml.org"]);
 
 // This is to confuse parcel.
 // TODO There may be a more elegant workaround in future versions.
 // https://github.com/parcel-bundler/parcel/pull/448
-const nodeRequire = IS_WEB ? null : require;
+export const nodeRequire = IS_WEB ? null : require;
+
+export const URL = IS_WEB ? window.URL : nodeRequire("url").URL;
 
 // Takes either a fully qualified url or a path to a file in the propel
 // website directory. Examples
@@ -101,28 +103,17 @@ const nodeRequire = IS_WEB ? null : require;
 // directory.
 async function fetch2(path: string,
     encoding: "binary" | "utf8" = "binary"): Promise<string | ArrayBuffer> {
-  if (IS_WEB) {
-    const host = document.location.host.split(":")[0];
-    if (propelHosts.has(host)) {
-      path = path.replace("deps/", "/");
-    } else {
-      path = path.replace("deps/", "http://propelml.org/");
-    }
-    const res = await fetch(path, { mode: "no-cors" });
-    if (encoding === "binary") {
-      return res.arrayBuffer();
-    } else {
-      return res.text();
-    }
+  const host = document.location.host.split(":")[0];
+  path = path.replace("deps/", "");
+  const url = propelHosts.has(host)
+                ? new URL(path, document.baseURI).href
+                : new URL(path, "http://propelml.org/").href;
+  console.log(path, document.baseURI);
+  const res = await fetch(url, { mode: "no-cors" });
+  if (encoding === "binary") {
+    return res.arrayBuffer();
   } else {
-    path = pathJoin(__dirname, "..", path);
-    const { readFileSync } = nodeRequire("fs");
-    if (encoding === "binary") {
-      const b = readFileSync(path, null);
-      return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
-    } else {
-      return readFileSync(path, "utf8");
-    }
+    return res.text();
   }
 }
 

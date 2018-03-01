@@ -41,7 +41,6 @@ async function importModule(target) {
 }
 
 let lastExecutedCellId: number = null;
-
 const rpc = new RpcChannel(window.parent, {
   async runCell(source: string, cellId: number): Promise<void> {
     lastExecutedCellId = cellId;

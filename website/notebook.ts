@@ -21,9 +21,11 @@
 // tslint:disable:no-reference
 /// <reference path="../node_modules/@types/codemirror/index.d.ts" />
 
+import { escape } from "he";
 import { Component, h } from "preact";
 import { OutputHandlerDOM } from "../src/output_handler";
-import { assert, delay, IS_WEB } from "../src/util";
+import { assert, delay, global, IS_NODE, IS_WEB, nodeRequire, URL }
+  from "../src/util";
 import { Avatar, GlobalHeader, Loading, UserMenu } from "./common";
 import * as db from "./db";
 import { RpcChannel } from "./nb_rpc_channel";
@@ -46,20 +48,36 @@ export function lookupCell(id: string | number) {
 }
 
 function createSandbox(): RpcChannel {
+  const IS_JSDOM = /jsdom/.test(window.navigator.userAgent);
+
+  const base = IS_JSDOM
+    ? new URL(`file:///${__dirname}/../build/website/sandbox`).href
+    : new URL("/sandbox", window.document.baseURI).href;
+
+  const html = `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <base href="${escape(base, { isAttributeValue: true })}">
+        <script type="text/javascript">
+          console.log('aaa!');
+        </script>
+        <script async type="text/javascript" src="nb_sandbox.js">
+        </script>
+      </head>
+      <body>
+      </body>
+    </html>`;
+
   const iframe = document.createElement("iframe");
   iframe.setAttribute("sandbox", "allow-scripts");
-  iframe.setAttribute("srcdoc", `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <script type="text/javascript"
-            src="${window.location.origin}/nb_sandbox.js"></script>
-  </head>
-  <body>
-  </body>
-</html>`);
+  iframe.setAttribute("src", `data:text/html,${html}`);
   iframe.style.display = "none";
   document.body.appendChild(iframe);
+
+  if (IS_JSDOM) {
+    iframe.contentWindow.fetch = window.fetch;
+  }
 
   const sandbox = new RpcChannel(iframe.contentWindow, {
     console(cellId: number, ...args: string[]): void {
@@ -83,7 +101,9 @@ function createSandbox(): RpcChannel {
 
 let sandbox_: RpcChannel = null;
 function sandbox(): RpcChannel {
-  if (sandbox_ === null) sandbox_ = createSandbox();
+  if (sandbox_ === null) {
+    sandbox_ = createSandbox();
+  }
   return sandbox_;
 }
 
