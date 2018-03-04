@@ -71,6 +71,7 @@ export const PropelIndex = (props) => {
     h(Intro, null),
     h(UseIt, null),
     h(Perks, null),
+    h(NNExample, null),
     h(ReferencesFooter, null),
   );
 };
@@ -117,6 +118,40 @@ const UseIt = () =>
       fixed(`<script src="https://unpkg.com/propel@${version}"></script>`)
     )
   );
+
+const NNExample = () =>
+  div("nn-example",
+    div("flex-row",
+      div("intro-notebook flex-cell", nb.notebook(nnExampleCode)),
+      div("flex-cell",
+        h("h2", { "class": "" }, "Neural Network Example"),
+        p(`Here is a small neural network which trains to recognize MNIST
+          handwritten digits. The dataset is loaded with batch size 128.
+          An experiment is a container for checkpoints stored to disk.
+          The experiment is loaded, and the dataset iterated, each time
+          computing softmax loss over three linear (densly connected) 
+          layers. In Node, this example will run with standard functionality
+          out of the box like logging loss to stdout, checkpointing and
+          restoring parameters.`)
+      ),
+    )
+  );
+
+const nnExampleCode = `
+import { dataset, experiment } from "propel"
+let ds = dataset("mnist/train").batch(128)
+let exp = await experiment("exp001")
+for (let batch of ds) {
+  let { images, labels } = await batch;
+  exp.sgd({ lr: 0.01 }, (params) =>
+    images.rescale([0, 255], [-1, 1])
+      .linear("L1", params, 200).relu()
+      .linear("L2", params, 100).relu()
+      .linear("L3", params, 10)
+      .softmaxLoss(labels));
+}
+`;
+
 
 const Perks = () =>
   div("perks",

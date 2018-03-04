@@ -157,9 +157,12 @@ header {
   }
 }
 
-.use-it {
+.nn-example {
   background: #fafafa;
+  padding: $size2 0;
+}
 
+.use-it {
   .use-it-inner {
     padding: $size2 0;
   }
