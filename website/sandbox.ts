@@ -18,7 +18,7 @@ import * as matplotlib from "../src/matplotlib";
 import * as mnist from "../src/mnist";
 
 import { global, globalEval } from "../src/util";
-import { transpile } from "./nb_transpiler";
+import { Transpiler } from "./nb_transpiler";
 import { SandboxRPC } from "./sandbox_rpc";
 
 async function importModule(target) {
@@ -35,21 +35,22 @@ async function importModule(target) {
 
 let lastExecutedCellId: number = null;
 
+const transpiler = new Transpiler();
+
 const rpc = new SandboxRPC(window.parent, {
   async runCell(source: string, cellId: number): Promise<void> {
     lastExecutedCellId = cellId;
     try {
       const console = new Console(rpc, cellId);
-      source = transpile(source);
-      source += `\n//# sourceURL=__cell${cellId}__.js`;
-      const fn = globalEval(source);
+      const transpiledSource = transpiler.transpile(source, `cell${cellId}`);
+      const fn = globalEval(transpiledSource);
       const result = await fn(global, importModule, console);
       if (result !== undefined) {
         console.log(result);
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.stack : `exception: ${e}`;
-      rpc.call("console", cellId, msg);
+      const stack = transpiler.formatError(e);
+      rpc.call("console", cellId, stack);
       // When running tests, rethrow any errors. This ensures that errors
       // occurring during notebook cell evaluation result in test failure.
       if (window.navigator.webdriver) {
@@ -59,11 +60,10 @@ const rpc = new SandboxRPC(window.parent, {
   }
 });
 
-function guessCellId(): number {
-  const stacktrace = (new Error()).stack.split("\n");
-  for (let i = stacktrace.length - 1; i >= 0; --i) {
-    const line = stacktrace[i];
-    const m = line.match(/__cell(\d+)__/);
+function guessCellId(error?: Error): number {
+  const name = transpiler.getEntryPoint(error);
+  if (name != null) {
+    const m = name.match(/cell(\d+)/);
     if (m) return +m[1];
   }
   return lastExecutedCellId;
@@ -109,4 +109,11 @@ matplotlib.setOutputHandler({
   imshow(data: any): void {
     rpc.call("imshow", guessCellId(), data);
   }
+});
+
+window.addEventListener("error", (ev: ErrorEvent) => {
+  const error = ev.error;
+  const cellId = guessCellId(error);
+  const stack = transpiler.formatError(error);
+  rpc.call("console", cellId, stack);
 });
